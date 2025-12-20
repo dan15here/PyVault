@@ -1,105 +1,63 @@
-import os 
-import base64
-from argon2 import PasswordHasher
-from argon2.exceptions import VerifyMismatchError
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+import os
+from argon2.low_level import hash_secret_raw, Type
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 class CryptoManager:
     def __init__(self):
-        # Inisialisasi Argon2 (Untuk Hashing Master Password)
-        self.ph = PasswordHasher(time_cost=2, memory_cost=102400, parallelism=8)
-    
+        # Konfigurasi Argon2 sesuai standar keamanan
+        self.time_cost = 2
+        self.memory_cost = 65536 # 64MB
+        self.parallelism = 2
+        self.hash_len = 32
+
     def generate_salt(self):
         """Membuat data acak 16 byte sebagai bumbu (salt)"""
-        return os.urandom(16) # 16 Bytes (128 bit) data acak. Ini adalah standar industri
+        return os.urandom(16)
 
-    def hash_master_password(self, password):
+    def derive_key(self, master_password, salt):
         """
-        Mengubah Master Password menjadi Hash (Pake Argon2).
-        Output: String Hash yang aman disimpan di DataBase.
+        Mengubah Password -> Key 32-byte (AES-256) menggunakan Argon2id.
+        Fungsi ini menggantikan PBKDF2 agar sesuai proposal (Memory Hard).
         """
-        return self.ph.hash(password)
-    
-    def verify_master_password(self, stored_hash, input_password):
-        try:
-            self.ph.verify(stored_hash, input_password)
-            return True
-        except VerifyMismatchError:
-            return False
-    
-    def derive_encryption_key(self, master_password, salt):
-        kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA256(),
-            length=32,
+        return hash_secret_raw(
+            secret=master_password.encode(),
             salt=salt,
-            iterations=480000,
+            time_cost=self.time_cost,
+            memory_cost=self.memory_cost,
+            parallelism=self.parallelism,
+            hash_len=32,
+            type=Type.ID
         )
-        key = base64.urlsafe_b64encode(kdf.derive(master_password.encode()))
-        return key
+
+    def hash_verifier(self, key, salt):
+        """
+        Membuat hash dari KEY untuk disimpan di DB (Verifier).
+        Digunakan untuk login check tanpa menyimpan key asli.
+        """
+        return hash_secret_raw(
+            secret=key,
+            salt=salt,
+            time_cost=1,
+            memory_cost=1024,
+            parallelism=1,
+            hash_len=32,
+            type=Type.ID
+        )
 
     def encrypt_data(self, key, plaintext):
-        """Mengunci data. Input: Teks biasa ===> Output: Teks acak (bytes)"""
-        f = Fernet(key)
-        return f.encrypt(plaintext.encode())
-    
-    def decrypt_data(self, key, plaintext):
-        """Membuka data. Input: Teks acak ===> Output: Teks biasa (string)"""
-        f = Fernet(key)
-        return f.decrypt(plaintext).decode()
-    
-# ==========================================
-# AREA PENGUJIAN (TESTING AREA)
-# Kode di bawah ini hanya jalan kalau file ini dijalankan langsung
-# ==========================================
-if __name__ == "__main__":
-    print("--- MULAI TEST SECURITY ---")
-    
-    # 1. Bikin Objek Security
-    crypto = CryptoManager()
-    
-    # 2. Skenario: User Baru Daftar
-    password_user = "Danish123"
-    print(f"\n[1] Password Asli User: {password_user}")
-    
-    # Test Hashing (Untuk Login)
-    hash_di_db = crypto.hash_master_password(password_user)
-    print(f"[1] Hash tersimpan: {hash_di_db}... (dipotong biar gak kepanjangan)")
-    
-    # 3. Skenario: User Coba Login
-    print("\n[2] Testing Login...")
-    
-    # Coba login pakai password BENAR
-    cek_benar = crypto.verify_master_password(hash_di_db, "Danish123")
-    print(f"    - Login pakai 'Danish123': {'BERHASIL ✅' if cek_benar else 'GAGAL ❌'}")
-    
-    # Coba login pakai password SALAH
-    cek_salah = crypto.verify_master_password(hash_di_db, "Anjing123")
-    print(f"    - Login pakai 'Anjing123': {'BERHASIL ❌' if cek_salah else 'GAGAL (Aman) ✅'}")
+        """
+        Mengunci data menggunakan AES-256-GCM.
+        Return: (ciphertext, nonce)
+        """
+        aesgcm = AESGCM(key)
+        nonce = os.urandom(12) # GCM membutuhkan nonce unik 12-byte
+        ciphertext = aesgcm.encrypt(nonce, plaintext.encode(), None)
+        return ciphertext, nonce
 
-    # 4. Skenario: Enkripsi Data
-    print("\n[3] Testing Enkripsi Data...")
-    
-    # Kita butuh salt dan kunci dulu
-    salt_dummy = crypto.generate_salt()
-    key = crypto.derive_encryption_key(password_user, salt_dummy)
-    print(f"    - Key Enkripsi (Base64): {key.decode()}")
-    
-    # Data rahasia yang mau diamankan
-    rahasia = "PasswordFacebookGue"
-    print(f"    - Plaintext: {rahasia}")
-    
-    # Kunci datanya
-    encrypted = crypto.encrypt_data(key, rahasia)
-    print(f"    - Ciphertext (Terenkripsi): {encrypted}")
-    
-    # Buka lagi datanya
-    decrypted = crypto.decrypt_data(key, encrypted)
-    print(f"    - Hasil Dekripsi: {decrypted}")
-    
-    # Verifikasi Akhir
-    if rahasia == decrypted:
-        print("\nKESIMPULAN: ✅ SEMUA FUNGSI BERJALAN NORMAL!")
-    else:
-        print("\nKESIMPULAN: ❌ ADA YANG ERROR!")
+    def decrypt_data(self, key, ciphertext, nonce):
+        """
+        Membuka data menggunakan AES-256-GCM.
+        """
+        aesgcm = AESGCM(key)
+        plaintext = aesgcm.decrypt(nonce, ciphertext, None)
+        return plaintext.decode()
