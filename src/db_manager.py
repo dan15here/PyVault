@@ -36,4 +36,4 @@ class DatabaseManager:
                 enc_data BLOB,
                 nonce BLOB)
         ''')
-        self.conN.commmit()
+        self.conn.commit()
