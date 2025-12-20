@@ -12,7 +12,7 @@ class DatabaseManager:
     
     def _harden_permission(self):
         """Mengatur izin file ke 600 (Hanya owner Read/Write) di Linux."""
-        if os.name = 'posix':
+        if os.name =='posix':
             try:
                 subprocess.run(['chmod', '600', self.db_name], check=True)
             except Exception as e:
