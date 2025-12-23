@@ -143,19 +143,17 @@ def menu_page(stdscr):
 
 
 # =============================
-# LOGIN PAGE
+# LOGIN PAGE (PASSWORD ONLY)
 # =============================
 def login_page(stdscr):
     curses.curs_set(1)
 
     h, w = stdscr.getmaxyx()
-    bw, bh = 40, 10
+    bw, bh = 40, 9
     sx = (w - bw) // 2
     sy = (h - bh) // 2
 
-    username = ""
     password = ""
-    field = "username"
     show_password = False
 
     while True:
@@ -163,23 +161,18 @@ def login_page(stdscr):
         stdscr.addstr(0, 2, "PYVAULT")
 
         for i in range(bh):
-            stdscr.addstr(sy + i, sx, " " * bw, curses.A_REVERSE)
+            stdscr.addstr(sy + i, sx, " " * bw)
 
-        welcome = f"Welcome {username}" if username else "Welcome"
-        stdscr.addstr(sy + 1, sx + 2, welcome)
+        stdscr.addstr(sy + 2, sx + 2, "LOGIN")
 
-        stdscr.addstr(sy + 3, sx + 2, "Username : " + username)
         pwd = password if show_password else "*" * len(password)
         stdscr.addstr(sy + 4, sx + 2, "Password : " + pwd)
 
         checkbox = "[x]" if show_password else "[ ]"
         stdscr.addstr(sy + 6, sx + 2, f"{checkbox} Show Password (TAB)")
-        stdscr.addstr(sy + 8, sx + 2, "ENTER Login | ESC Exit")
+        stdscr.addstr(sy + 7, sx + 2, "ENTER Login | ESC Exit")
 
-        if field == "username":
-            stdscr.move(sy + 3, sx + 13 + len(username))
-        else:
-            stdscr.move(sy + 4, sx + 13 + len(password))
+        stdscr.move(sy + 4, sx + 13 + len(password))
 
         stdscr.refresh()
         key = stdscr.getch()
@@ -190,24 +183,16 @@ def login_page(stdscr):
         elif key == 9:
             show_password = not show_password
 
-        elif key in (curses.KEY_UP, curses.KEY_DOWN):
-            field = "password" if field == "username" else "username"
-
         elif key in (10, 13):
-            if username and password:
+            if password:
                 return True
 
         elif key in (curses.KEY_BACKSPACE, 127):
-            if field == "username" and username:
-                username = username[:-1]
-            elif field == "password" and password:
+            if password:
                 password = password[:-1]
 
         elif 32 <= key <= 126:
-            if field == "username":
-                username += chr(key)
-            else:
-                password += chr(key)
+            password += chr(key)
 
 
 # =============================
