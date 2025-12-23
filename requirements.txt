@@ -2,4 +2,3 @@ cryptography
 argon2-cffi
 pyperclip
 rich
-curses
