@@ -11,17 +11,9 @@ class CryptoManager:
         self.hash_len = 32
 
     def generate_salt(self):
-        """
-        Membuat data acak 16 byte sebagai bumbu (salt)
-        Salt digunakan untuk mencegah rainbow table attacks.
-        """
         return os.urandom(16)
 
     def derive_key(self, master_password, salt):
-        """
-        Mengubah Password -> Key 32-byte (AES-256) menggunakan Argon2id.
-        Berbasis memory-hard sehingga tahan serangan bruteforce menggunakan GPU.
-        """
         return hash_secret_raw(
             secret=master_password.encode(),
             salt=salt,
@@ -33,10 +25,6 @@ class CryptoManager:
         )
 
     def hash_verifier(self, key, salt):
-        """
-        Membuat hash dari encryption key untuk disimpan di DB (Verifier).
-        Digunakan untuk login check tanpa menyimpan key asli.
-        """
         return hash_secret_raw(
             secret=key,
             salt=salt,
@@ -48,22 +36,12 @@ class CryptoManager:
         )
 
     def encrypt_data(self, key, plaintext):
-        """
-        Mengunci data menggunakan AES-256-GCM.
-        Args: (key, plaintext)
-        Return: (ciphertext, nonce)
-        """
         aesgcm = AESGCM(key)
         nonce = os.urandom(12) # GCM standard 12-byte nonce
         ciphertext = aesgcm.encrypt(nonce, plaintext.encode(), None)
         return ciphertext, nonce
 
     def decrypt_data(self, key, ciphertext, nonce):
-        """
-        Dekripsi data menggunakan AES-256-GCM.
-        Args: (key, ciphertext, nonce)
-        Returns: plaintext
-        """
         try:
             aesgcm = AESGCM(key)
             plaintext = aesgcm.decrypt(nonce, ciphertext, None)
