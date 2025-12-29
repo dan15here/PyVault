@@ -13,7 +13,7 @@ def login_page(stdscr):
         stdscr.clear()
         h, w = stdscr.getmaxyx()
 
-        stdscr.addstr(2, 2, "PYVAULT LOGIN", curses.A_BOLD)
+        stdscr.addstr(2, 2, "PYVAULT LOGIN", curses.A_BOLD | curses.color_pair(1))
 
         pwd = password if show_password else "*" * len(password)
         stdscr.addstr(5, 4, f"Password : {pwd}")
@@ -61,7 +61,7 @@ def create_label_page(stdscr, preset_data=None):
         h, w = stdscr.getmaxyx()
 
         title = "EDIT LABEL" if preset_data else "CREATE LABEL"
-        stdscr.addstr(1, 2, title, curses.A_BOLD)
+        stdscr.addstr(1, 2, title, curses.A_BOLD | curses.color_pair(1))
         stdscr.addstr(2, 2, "-" * 40)
 
         stdscr.addstr(5, 4, f"Label       : {label}")
@@ -191,54 +191,7 @@ def dashboard_page(stdscr):
             message = f"Password copied: {items[current]['password']}"
         elif key == 27:
             return
-
-
-# ======================================================
-# SETTINGS
-# ======================================================
-def settings_page(stdscr):
-    curses.curs_set(1)
-
-    old, new, confirm = "", "", ""
-    fields = ["old", "new", "confirm"]
-    current = 0
-
-    while True:
-        stdscr.clear()
-        stdscr.addstr(1, 2, "CHANGE PASSWORD", curses.A_BOLD)
-
-        stdscr.addstr(4, 4, f"Old Password      : {'*' * len(old)}")
-        stdscr.addstr(6, 4, f"New Password      : {'*' * len(new)}")
-        stdscr.addstr(8, 4, f"Re-enter Password : {'*' * len(confirm)}")
-
-        stdscr.addstr(11, 2, "CTRL+S Save | ESC Back")
-
-        pos = {"old": 4, "new": 6, "confirm": 8}
-        val = eval(fields[current])
-        stdscr.move(pos[fields[current]], 26 + len(val))
-        stdscr.refresh()
-
-        key = stdscr.getch()
-
-        if key == 27:
-            return None
-        elif key == curses.KEY_UP:
-            current = (current - 1) % 3
-        elif key == curses.KEY_DOWN:
-            current = (current + 1) % 3
-        elif key == 19:
-            if new == confirm and new:
-                return True
-        elif key in (curses.KEY_BACKSPACE, 127):
-            if fields[current] == "old": old = old[:-1]
-            elif fields[current] == "new": new = new[:-1]
-            elif fields[current] == "confirm": confirm = confirm[:-1]
-        elif 32 <= key <= 126:
-            if fields[current] == "old": old += chr(key)
-            elif fields[current] == "new": new += chr(key)
-            elif fields[current] == "confirm": confirm += chr(key)
-
-
+            
 # ======================================================
 # MENU
 # ======================================================

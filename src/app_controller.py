@@ -13,7 +13,7 @@ class AppController:
     
     def setup_first_time(self, stdscr):
         stdscr.clear()
-        stdscr.addstr(2, 2, "=== FIRST TIME SETUP ===", curses.A_BOLD)
+        stdscr.addstr(2, 2, "=== FIRST TIME SETUP ===", curses.A_BOLD | curses.color_pair(1))
         stdscr.addstr(4, 2, "Create Master Password")
         stdscr.addstr(5, 2, "(Minimum 8 characters)")
         stdscr.addstr(7, 2, "This password will protect all your data.")
@@ -25,7 +25,7 @@ class AppController:
 
         if not master_password:
             stdscr.clear()
-            stdscr.addstr(5, 2, "Setup cancelled!", curses.A_BOLD)
+            stdscr.addstr(5, 2, "Setup cancelled!", curses.A_BOLD | curses.color_pair(3))
             stdscr.refresh()
             stdscr.getch()
             return False
@@ -33,7 +33,7 @@ class AppController:
         # Validated password length
         if len(master_password) < 8:
             stdscr.clear()
-            stdscr.addstr(5, 2, "Password too short!", curses.A_BOLD)
+            stdscr.addstr(5, 2, "Password too short!", curses.A_BOLD | curses.color_pair(3))
             stdscr.addstr(7, 2, "Minimum 8 characters.", curses.A_BOLD)
             stdscr.addstr(9, 2, "Press any key to try again...", curses.A_BOLD)
             stdscr.refresh()
@@ -53,7 +53,7 @@ class AppController:
         self.db.save_config(combined_salt, verifier)
 
         stdscr.clear()
-        stdscr.addstr(5, 2, "Setup completed!", curses.A_BOLD)
+        stdscr.addstr(5, 2, "Setup completed!", curses.A_BOLD | curses.color_pair(2))
         stdscr.addstr(7, 2, "Press any key to continue...", curses.A_BOLD)
         stdscr.refresh()
         stdscr.getch()
@@ -64,7 +64,7 @@ class AppController:
         config = self.db.get_config()
         if not config:
             stdscr.clear()
-            stdscr.addstr(5, 2, "No config found!", curses.A_BOLD)
+            stdscr.addstr(5, 2, "No config found!", curses.A_BOLD | curses.color_pair(3))
             stdscr.addstr(7, 2, "Press any key to exit...", curses.A_BOLD)
             stdscr.refresh()
             stdscr.getch()
@@ -87,7 +87,7 @@ class AppController:
 
         if computed_verifier != stored_verifier:
             stdscr.clear()
-            stdscr.addstr(5, 2, "Invalid Password")
+            stdscr.addstr(5, 2, "Invalid Password", curses.A_BOLD | curses.color_pair(3))
             stdscr.addstr(7, 2, "Press any key to exit...")
             stdscr.refresh()
             stdscr.getch()
@@ -175,7 +175,7 @@ class AppController:
             h, w = stdscr.getmaxyx()
 
             # Header
-            stdscr.addstr(1, 2, "PYVAULT - MAIN MENU", curses.A_BOLD)
+            stdscr.addstr(1, 2, "PYVAULT - MAIN MENU", curses.A_BOLD | curses.color_pair(1))
             stdscr.addstr(2, 2, "-" * 25)
 
             # Menu items
@@ -223,7 +223,7 @@ class AppController:
             h, w = stdscr.getmaxyx()
 
             # Header
-            stdscr.addstr(1, 2, "PYVAULT DASHBOARD", curses.A_BOLD)
+            stdscr.addstr(1, 2, "PYVAULT DASHBOARD", curses.A_BOLD | curses.color_pair(1))
             stdscr.addstr(2, 2, "-" * 40)
 
             # Display items
@@ -246,12 +246,14 @@ class AppController:
 
                     y += 5
             
-            # Footer
-            stdscr.addstr(h - 3, 2, "ENTER View | E Edit | C Copy | D Delete | CTRL+N Add | ESC Exit")
+            footer = "RET:View E:Edit C:Copy D:Del ^N:Add ESC:Exit"
+            if w > len(footer) + 4:
+                stdscr.addstr(h - 3, 2, footer)
 
             # Status message
             if message:
-                stdscr.addstr(h - 2, 2, message, curses.A_BOLD)
+                msg = message[:w-4] if len(message) > w-4 else message
+                stdscr.addstr(h - 2, 2, msg, curses.A_BOLD | curses.color_pair(2))
             
             stdscr.refresh()
             key = stdscr.getch()
