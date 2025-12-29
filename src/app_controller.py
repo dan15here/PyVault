@@ -202,10 +202,7 @@ class AppController:
             elif key == 27:   # ESC
                 return
 
-
-
-
     def close(self):
-        self.db.close()
+        self.db.close(self)
         self.master_key = None  # Clear dari memory
         self.salt = None
