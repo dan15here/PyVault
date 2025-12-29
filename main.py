@@ -2,7 +2,7 @@ import curses
 from src.app_controller import AppController
 
 def main(stdscr):
-    app =AppController()
+    app = AppController()
 
     try:
         if not app.db.is_initialized():
@@ -27,6 +27,6 @@ def main(stdscr):
 
     finally:
          app.close()
-         
+
 if __name__ == "__main__":
     curses.wrapper(main)
