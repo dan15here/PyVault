@@ -1,4 +1,4 @@
+# PyVault Password Manager - Dependencies
 cryptography
 argon2-cffi
 pyperclip
-rich

@@ -1,14 +1,32 @@
 import curses
-from src.tui import menu_page, login_page
-
+from src.app_controller import AppController
 
 def main(stdscr):
-    curses.curs_set(0)
-    stdscr.keypad(True)
+    app =AppController()
 
-    if login_page(stdscr):
-        menu_page(stdscr)
+    try:
+        if not app.db.is_initialized():
+            if not app.setup_first_time(stdscr):
+                return
+        
+        if not app.verify_master_password(stdscr):
+                return
+        
+        app.run_dashboard(stdscr)
 
+    except KeyboardInterrupt:
+        pass
 
+    except Exception as e:
+        stdscr.clear()
+        stdscr.addstr(1, 1, "ERROR OCCURED:", curses.A_BOLD)
+        stdscr.addstr(3, 1, str(e))
+        stdscr.addstr(5, 1, "Press any key to exit...")
+        stdscr.refresh()
+        stdscr.getch()
+
+    finally:
+         app.close()
+         
 if __name__ == "__main__":
     curses.wrapper(main)
