@@ -57,7 +57,6 @@ class AppController:
         stdscr.addstr(7, 2, "Press any key to continue...", curses.A_BOLD)
         stdscr.refresh()
         stdscr.getch()
-
         return True
 
     def verify_master_password(self, stdscr):
@@ -77,7 +76,6 @@ class AppController:
 
         # Login page
         master_password = login_page(stdscr)
-
         if not master_password:
             return False
 
@@ -94,7 +92,6 @@ class AppController:
             stdscr.refresh()
             stdscr.getch()
             return False
-
         return True
 
     def load_vault_items(self):
@@ -117,9 +114,7 @@ class AppController:
         return items
 
     def save_new_item(self, item_data):
-        # Enkripsi password
         enc_data, nonce = self.crypto.encrypt_data(self.master_key, item_data['password'])
-        # Simpan ke database
         self.db.add_item(
             item_data['site'],
             item_data['username'],
@@ -131,9 +126,7 @@ class AppController:
         self.db.delete_item(item_id)
 
     def update_item(self, item_id, item_data):
-        # Enkripsi password baru
         enc_data, nonce = self.crypto.encrypt_data(self.master_key, item_data['password'])
-        # Update di database
         self.db.update_item(
             item_id,
             item_data['site'],
@@ -288,7 +281,7 @@ class AppController:
                     items = self.load_vault_items()
                     message = "Item updated!"
             
-            # Add new password
+            # Add new item
             elif key == 14:     # CTRL+N
                 new_item = create_label_page(stdscr)
                 if new_item:
@@ -304,7 +297,7 @@ class AppController:
                 else:
                     message = "Copy failed (pyperclip not installed)"
 
-            # Delete password
+            # Delete item
             elif key in (ord('d'), ord('D')) and items:
                 stdscr.addstr(h - 2, 2, "Delete this item? (y/n)", curses.A_BOLD)
                 stdscr.refresh()
@@ -315,14 +308,13 @@ class AppController:
                     items = self.load_vault_items()
                     message = "Item deleted!"
                 
-                # Adjust cursor jika sudah di akhir
                 if current >= len(items) and items:
                     current = len(items) - 1
                 elif not items:
                     current = 0
 
             # Exit
-            elif key == 27:   # ESC
+            elif key == 27:
                 return
 
     def close(self):
