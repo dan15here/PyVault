@@ -11,10 +11,9 @@ class DatabaseManager:
         self._harden_permission()                  # 3. Kunci file database (Security)
     
     def _harden_permission(self):
-        """Mengatur izin file ke chmod 600 (Hanya owner Read/Write) di Linux."""
-        if os.name =='posix':   # Cek apakah OS-nya Linux/Unix
+        # chmod 600
+        if os.name =='posix':
             try:
-                # Menjalankan perintah shell: chmod 600 pyvault.db
                 subprocess.run(['chmod', '600', self.db_name], check=True)
             except Exception as e:
                 print(f"[Warning] Gagal mengatur izin file DB")
@@ -36,6 +35,7 @@ class DatabaseManager:
                 enc_data BLOB NOT NULL,
                 nonce BLOB NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
         ''')
         self.conn.commit()
     
@@ -50,7 +50,7 @@ class DatabaseManager:
 
     def get_config(self):
         self.cursor.execute("SELECT salt, verifier FROM security_config")
-        result = self.cursor.fetchone
+        result = self.cursor.fetchone()
         return result
     
     def add_item(self, site, username, enc_data, nonce):
@@ -66,8 +66,8 @@ class DatabaseManager:
         return self.cursor.fetchone()
     
     def delete_item(self, item_id):
-        self.cursor.execute("DELETE FROM vault_items WHERE id = ?", (item_id))
-        self.conn.commit
+        self.cursor.execute("DELETE FROM vault_items WHERE id = ?", (item_id,))
+        self.conn.commit()
 
     def update_item(self, item_id, site, username, enc_data, nonce):
         self.cursor.execute('''UPDATE vault_items SET site_name = ?, username = ?, enc_data = ?, nonce = ? WHERE id = ?''', (site, username, enc_data, nonce, item_id))

@@ -8,8 +8,8 @@ def main(stdscr):
         if not app.db.is_initialized():
             if not app.setup_first_time(stdscr):
                 return
-        
-        if not app.verify_master_password(stdscr):
+        else:
+            if not app.verify_master_password(stdscr):
                 return
         
         app.run_dashboard(stdscr)

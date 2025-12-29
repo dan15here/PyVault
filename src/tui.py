@@ -5,6 +5,7 @@ import curses
 # ======================================================
 def login_page(stdscr):
     curses.curs_set(1)
+    stdscr.keypad(True)
     password = ""
     show_password = False
 
@@ -27,23 +28,23 @@ def login_page(stdscr):
         key = stdscr.getch()
 
         if key == 27:
-            return False
+            return None  
         elif key == 9:
             show_password = not show_password
         elif key in (10, 13):
             if password:
-                return True
-        elif key in (curses.KEY_BACKSPACE, 127):
+                return password
+        elif key in (curses.KEY_BACKSPACE, 127, 8):
             password = password[:-1]
         elif 32 <= key <= 126:
             password += chr(key)
-
 
 # ======================================================
 # CREATE / EDIT LABEL PAGE
 # ======================================================
 def create_label_page(stdscr, preset_data=None):
     curses.curs_set(1)
+    stdscr.keypad(True)
 
     label = preset_data["label"] if preset_data else ""
     site = preset_data["site"] if preset_data else ""
@@ -77,7 +78,7 @@ def create_label_page(stdscr, preset_data=None):
 
         checkbox = "[x]" if show_password else "[ ]"
         stdscr.addstr(h - 4, 4, f"{checkbox} Show Password (TAB)")
-        stdscr.addstr(h - 2, 2, "CTRL+N Save | ↑↓ Move | ESC Back")
+        stdscr.addstr(h - 2, 2, "CTRL+N Save | UP/DOWN Move | ESC Back")
 
         field = fields[current]
         y_map = {"label": 5, "site": 7, "username": 9, "password": 11}
@@ -110,7 +111,7 @@ def create_label_page(stdscr, preset_data=None):
                     "password": password,
                     "description": description
                 }
-        elif key in (curses.KEY_BACKSPACE, 127):
+        elif key in (curses.KEY_BACKSPACE, 127, 8):
             if field == "label": label = label[:-1]
             elif field == "site": site = site[:-1]
             elif field == "username": username = username[:-1]

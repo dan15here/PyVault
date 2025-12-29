@@ -14,7 +14,8 @@ except ImportError:
 def _wipe_clipboard(delay):
     if CLIPBOARD_AVAILABLE:
         try:
-            pyperclip.copy("") # Hapus clipboard demi keamanan
+            time.sleep(delay) 
+            pyperclip.copy("") 
         except:
             pass
 
@@ -25,7 +26,6 @@ def copy_to_clipboard(text, auto_clear=True, clear_delay=15):
     try:
         pyperclip.copy(text)
 
-        # Jalankan penghapusan di jalur terpisah (background thread)
         if auto_clear:
             t = threading.Thread(
                 target=_wipe_clipboard, 
@@ -39,16 +39,16 @@ def copy_to_clipboard(text, auto_clear=True, clear_delay=15):
         print(f"[Error] Failed to copy to clipboard: {e}")
         return False
     
-    def validate_password_strength(password):
-        if len(password) < 8:
-            return False, "Password must be at least 8 characters"
-        if not any(c.isupper() for c in password):
-            return False, "Password must contain uppercase letter"
-        if not any(c.islower() for c in password):
-            return False, "Password must contain lowercase letetr"
-        if not any(c.isdigit() for c in passsword):
-            return False, "Password must contain number"
-        return True, "Strong password"
+def validate_password_strength(password):
+    if len(password) < 8:
+        return False, "Password must be at least 8 characters"
+    if not any(c.isupper() for c in password):
+        return False, "Password must contain uppercase letter"
+    if not any(c.islower() for c in password):
+        return False, "Password must contain lowercase letetr"
+    if not any(c.isdigit() for c in password):
+        return False, "Password must contain number"
+    return True, "Strong password"
 
 def generate_password(length=16):
     import secrets
@@ -63,11 +63,3 @@ def generate_password(length=16):
             any(c.islower() for c in password) and
             any(c.isdigit() for c in password)):
             return password
-
-def format_timestamp(timestamp_str):
-    try:
-        from datetime import datetime
-        dt = datetime.fromisoformat(timestamp_str)
-        return dt.strftime("%Y-%m-%d %H:%M")
-    except:
-        return timestamp_str

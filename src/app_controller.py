@@ -6,18 +6,18 @@ from .utils import copy_to_clipboard
 
 class AppController:
     def __init__(self):
-        self.db = DatabaseManager
-        self.crypto = CryptoManager
+        self.db = DatabaseManager()
+        self.crypto = CryptoManager()
         self.master_key = None
         self.salt = None
     
     def setup_first_time(self, stdscr):
         stdscr.clear()
         stdscr.addstr(2, 2, "=== FIRST TIME SETUP ===", curses.A_BOLD)
-        stdscr.addstr(4, 2, "Buat Master Password Anda")
-        stdscr.addstr(5, 2, "(minimum 8 karakter)")
-        stdscr.addstr(7, 2, "Password ini akan mengamankan SEMUA data anda.")
-        stdscr.addstr(8, 2, "Jika anda lupa password, data anda TIDAK BISA dipulihkan!")
+        stdscr.addstr(4, 2, "Create Master Password")
+        stdscr.addstr(5, 2, "(Minimum 8 characters)")
+        stdscr.addstr(7, 2, "This password will protect all your data.")
+        stdscr.addstr(8, 2, "If you forget your password, your data will be lost!")
         stdscr.refresh()
         stdscr.getch()
 
@@ -25,7 +25,7 @@ class AppController:
 
         if not master_password:
             stdscr.clear()
-            stdscr.addstr(5, 2, "Setup dibatalkan.", curses.A_BOLD)
+            stdscr.addstr(5, 2, "Setup cancelled!", curses.A_BOLD)
             stdscr.refresh()
             stdscr.getch()
             return False
@@ -33,9 +33,9 @@ class AppController:
         # Validated password length
         if len(master_password) < 8:
             stdscr.clear()
-            stdscr.addstr(5, 2, "Password terlalu pendek!.", curses.A_BOLD)
-            stdscr.addstr(7, 2, "Password minimal 8 karakter.", curses.A_BOLD)
-            stdscr.addstr(9, 2, "Tekan apapun untuk kembali.....", curses.A_BOLD)
+            stdscr.addstr(5, 2, "Password too short!", curses.A_BOLD)
+            stdscr.addstr(7, 2, "Minimum 8 characters.", curses.A_BOLD)
+            stdscr.addstr(9, 2, "Press any key to try again...", curses.A_BOLD)
             stdscr.refresh()
             stdscr.getch()
             return self.setup_first_time(stdscr)
@@ -53,20 +53,20 @@ class AppController:
         self.db.save_config(combined_salt, verifier)
 
         stdscr.clear()
-        stdscr.addstr(5, 2, "Setup berhasil!", curses.A_BOLD)
-        stdscr.addstr(7, 2, "Tekan apapun untuk melanjutkan.....", curses.A_BOLD)
+        stdscr.addstr(5, 2, "Setup completed!", curses.A_BOLD)
+        stdscr.addstr(7, 2, "Press any key to continue...", curses.A_BOLD)
         stdscr.refresh()
         stdscr.getch()
 
         return True
 
-    def verify_master_password(self, stdscr, master_password):
+    def verify_master_password(self, stdscr):
         # Load config dari database
         config = self.db.get_config()
         if not config:
             stdscr.clear()
-            stdscr.addstr(5, 2, "Tidak ada config ditemukan.", curses.A_BOLD)
-            stdscr.addstr(7, 2, "Tekan apapun untuk melanjutkan.....", curses.A_BOLD)
+            stdscr.addstr(5, 2, "No config found!", curses.A_BOLD)
+            stdscr.addstr(7, 2, "Press any key to exit...", curses.A_BOLD)
             stdscr.refresh()
             stdscr.getch()
             return False
@@ -80,6 +80,22 @@ class AppController:
 
         if not master_password:
             return False
+
+        # Derive master key dari password
+        self.master_key = self.crypto.derive_key(master_password, self.salt)
+
+        # Verifikasi password dengan stored verifier
+        computed_verifier = self.crypto.hash_verifier(self.master_key, verifier_salt)
+
+        if computed_verifier != stored_verifier:
+            stdscr.clear()
+            stdscr.addstr(5, 2, "Invalid Password")
+            stdscr.addstr(7, 2, "Press any key to exit...")
+            stdscr.refresh()
+            stdscr.getch()
+            return False
+
+        return True
 
     def load_vault_items(self):
         items = []
@@ -114,6 +130,48 @@ class AppController:
     def delete_item(self, item_id):
         self.db.delete_item(item_id)
 
+    def update_item(self, item_id, item_data):
+        # Enkripsi password baru
+        enc_data, nonce = self.crypto.encrypt_data(self.master_key, item_data['password'])
+        # Update di database
+        self.db.update_item(
+            item_id,
+            item_data['site'],
+            item_data['username'],
+            enc_data,
+            nonce
+        )
+
+    def view_item_detail(self, stdscr, item):
+        curses.curs_set(0)
+        show_password = False
+        
+        while True:
+            stdscr.clear()
+            h, w = stdscr.getmaxyx()
+            
+            stdscr.addstr(1, 2, "ITEM DETAIL", curses.A_BOLD)
+            stdscr.addstr(2, 2, "-" * 40)
+            
+            stdscr.addstr(4, 4, f"Site     : {item['site_name']}")
+            stdscr.addstr(6, 4, f"Username : {item['username']}")
+            
+            pwd = item['password'] if show_password else '*' * len(item['password'])
+            stdscr.addstr(8, 4, f"Password : {pwd}")
+            
+            checkbox = "[x]" if show_password else "[ ]"
+            stdscr.addstr(10, 4, f"{checkbox} Show Password (TAB)")
+            
+            stdscr.addstr(h - 2, 2, "TAB Toggle Password | ESC Back")
+            stdscr.refresh()
+            
+            key = stdscr.getch()
+            
+            if key == 27:  # ESC
+                return
+            elif key == 9:  # TAB
+                show_password = not show_password
+
     def run_dashboard(self, stdscr):
         curses.curs_set(0)
         items = self.load_vault_items()
@@ -139,7 +197,7 @@ class AppController:
                     if i == current:
                         stdscr.attron(curses.A_REVERSE)
 
-                    stdscr.addstr(y, 4, f"Site      : {item['site']}")
+                    stdscr.addstr(y, 4, f"Site : {item['site_name']}")
                     stdscr.addstr(y + 1, 4, f"Username : {item['username']}")
                     stdscr.addstr(y + 2, 4, f"Password : {'*' * len(item['password'])}")
 
@@ -149,7 +207,7 @@ class AppController:
                     y += 5
             
             # Footer
-            stdscr.addstr(h - 3, 2, "CTRL+N Add | C Copy | D Delete | ESC Exit")
+            stdscr.addstr(h - 3, 2, "ENTER View | E Edit | C Copy | D Delete | CTRL+N Add | ESC Exit")
 
             # Status message
             if message:
@@ -165,6 +223,24 @@ class AppController:
             elif key == curses.KEY_DOWN and items:
                 current = (current + 1) % len(items)
             
+            # View detail (ENTER)
+            elif key in (10, 13) and items:
+                self.view_item_detail(stdscr, items[current])
+            
+            # Edit item
+            elif key in (ord('e'), ord('E')) and items:
+                edited_item = create_label_page(stdscr, {
+                    "label": items[current].get('site_name', ''),
+                    "site": items[current].get('site_name', ''),
+                    "username": items[current].get('username', ''),
+                    "password": items[current].get('password', ''),
+                    "description": ""
+                })
+                if edited_item:
+                    self.update_item(items[current]['id'], edited_item)
+                    items = self.load_vault_items()
+                    message = "Item updated!"
+            
             # Add new password
             elif key == 14:     # CTRL+N
                 new_item = create_label_page(stdscr)
@@ -172,25 +248,25 @@ class AppController:
                     self.save_new_item(new_item)
                     items = self.load_vault_items()
                     current = len(items) - 1
-                    message = "Akun sukses disimpan!"
+                    message = "Account saved!"
 
             # Copy Password
             elif key in (ord('c'), ord('C')) and items:
                 if copy_to_clipboard(items[current]['password']):
-                    message = "Passaword berhasil di-copy (auto-clear dalam 15s)"
+                    message = "Password copied! (auto-clear in 15s)"
                 else:
-                    message = "Gagal melakukan copy(pyperclip belum di-instal)"
+                    message = "Copy failed (pyperclip not installed)"
 
             # Delete password
             elif key in (ord('d'), ord('D')) and items:
-                stdscr.addstr(h - 2, 2, "Hapus data ini? (y/n)", curses.A_BOLD)
+                stdscr.addstr(h - 2, 2, "Delete this item? (y/n)", curses.A_BOLD)
                 stdscr.refresh()
                 confirm = stdscr.getch()
 
                 if confirm in (ord('y'), ord('Y')):
                     self.delete_item(items[current]['id'])
                     items = self.load_vault_items()
-                    message = "Data berhasil dihapus"
+                    message = "Item deleted!"
                 
                 # Adjust cursor jika sudah di akhir
                 if current >= len(items) and items:
@@ -203,6 +279,6 @@ class AppController:
                 return
 
     def close(self):
-        self.db.close(self)
-        self.master_key = None  # Clear dari memory
+        self.db.close()
+        self.master_key = None 
         self.salt = None
