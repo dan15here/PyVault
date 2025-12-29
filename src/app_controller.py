@@ -172,6 +172,53 @@ class AppController:
             elif key == 9:  # TAB
                 show_password = not show_password
 
+    def run_main_menu(self, stdscr):
+        curses.curs_set(0)
+        menu = ["View Dashboard", "Add New Account", "Exit"]
+        current = 0
+
+        while True:
+            stdscr.clear()
+            h, w = stdscr.getmaxyx()
+
+            # Header
+            stdscr.addstr(1, 2, "PYVAULT - MAIN MENU", curses.A_BOLD)
+            stdscr.addstr(2, 2, "-" * 25)
+
+            # Menu items
+            for i, item in enumerate(menu):
+                y = 4 + i * 2
+                if i == current:
+                    stdscr.attron(curses.A_REVERSE)
+                    stdscr.addstr(y, 4, f"> {item}")
+                    stdscr.attroff(curses.A_REVERSE)
+                else:
+                    stdscr.addstr(y, 4, f"  {item}")
+
+            # Footer
+            footer = "UP/DOWN:Navigate ENTER:Select"
+            if w > len(footer) + 4:
+                stdscr.addstr(h - 2, 2, footer)
+
+            stdscr.refresh()
+            key = stdscr.getch()
+
+            if key == curses.KEY_UP:
+                current = (current - 1) % len(menu)
+            elif key == curses.KEY_DOWN:
+                current = (current + 1) % len(menu)
+            elif key in (10, 13):  # ENTER
+                if menu[current] == "View Dashboard":
+                    self.run_dashboard(stdscr)
+                elif menu[current] == "Add New Account":
+                    new_item = create_label_page(stdscr)
+                    if new_item:
+                        self.save_new_item(new_item)
+                elif menu[current] == "Exit":
+                    return
+            elif key == 27:  # ESC
+                return
+
     def run_dashboard(self, stdscr):
         curses.curs_set(0)
         items = self.load_vault_items()

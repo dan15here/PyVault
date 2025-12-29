@@ -12,7 +12,7 @@ def main(stdscr):
             if not app.verify_master_password(stdscr):
                 return
         
-        app.run_dashboard(stdscr)
+        app.run_main_menu(stdscr)
 
     except KeyboardInterrupt:
         pass
