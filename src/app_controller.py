@@ -111,15 +111,98 @@ class AppController:
             nonce
         )
 
+    def delete_item(self, item_id):
+        self.db.delete_item(item_id)
+
     def run_dashboard(self, stdscr):
         curses.curs_set(0)
         items = self.load_vault_items()
         current = 0
         message = ""
 
-    def run_dashboard(self, stdscr):
-        stdscr.clear()
-        h, w = stdscr.getmaxyx()
+        while True:
+            stdscr.clear()
+            h, w = stdscr.getmaxyx()
+
+            # Header
+            stdscr.addstr(1, 2, "PYVAULT DASHBOARD", curses.A_BOLD)
+            stdscr.addstr(2, 2, "-" * 40)
+
+            # Display items
+            if not items:
+                stdscr.addstr(5, 4, "Belum ada data yang disimpan.")
+                stdscr.addstr(7, 4, "Tekan CTRL+N untuk menambahkan akun pertama anda")
+            else:
+                y = 4
+                for i, item in enumerate(items):
+                    # Highlight item saat ini.
+                    if i == current:
+                        stdscr.attron(curses.A_REVERSE)
+
+                    stdscr.addstr(y, 4, f"Site      : {item['site']}")
+                    stdscr.addstr(y + 1, 4, f"Username : {item['username']}")
+                    stdscr.addstr(y + 2, 4, f"Password : {'*' * len(item['password'])}")
+
+                    if i == current:
+                        stdscr.attroff(curses.A_REVERSE)
+
+                    y += 5
+            
+            # Footer
+            stdscr.addstr(h - 3, 2, "CTRL+N Add | C Copy | D Delete | ESC Exit")
+
+            # Status message
+            if message:
+                stdscr.addstr(h - 2, 2, message, curses.A_BOLD)
+            
+            stdscr.refresh()
+            key = stdscr.getch()
+            message = ""
+
+            # Navigation
+            if key == curses.KEY_UP and items:
+                current = (current - 1) % len(items)
+            elif key == curses.KEY_DOWN and items:
+                current = (current + 1) % len(items)
+            
+            # Add new password
+            elif key == 14:     # CTRL+N
+                new_item = create_label_page(stdscr)
+                if new_item:
+                    self.save_new_item(new_item)
+                    items = self.load_vault_items()
+                    current = len(items) - 1
+                    message = "Akun sukses disimpan!"
+
+            # Copy Password
+            elif key in (ord('c'), ord('C')) and items:
+                if copy_to_clipboard(items[current]['password']):
+                    message = "Passaword berhasil di-copy (auto-clear dalam 15s)"
+                else:
+                    message = "Gagal melakukan copy(pyperclip belum di-instal)"
+
+            # Delete password
+            elif key in (ord('d'), ord('D')) and items:
+                stdscr.addstr(h - 2, 2, "Hapus data ini? (y/n)", curses.A_BOLD)
+                stdscr.refresh()
+                confirm = stdscr.getch()
+
+                if confirm in (ord('y'), ord('Y')):
+                    self.delete_item(items[current]['id'])
+                    items = self.load_vault_items()
+                    message = "Data berhasil dihapus"
+                
+                # Adjust cursor jika sudah di akhir
+                if current >= len(items) and items:
+                    current = len(items) - 1
+                elif not items:
+                    current = 0
+
+            # Exit
+            elif key == 27:   # ESC
+                return
+
+
 
 
     def close(self):
