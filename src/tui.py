@@ -1,5 +1,92 @@
 import curses
 
+
+# First setup page
+def first_setup_page(stdscr):
+    curses.curs_set(1)
+    stdscr.keypad(True)
+    password = ""
+    retype_password = ""
+    show_password = False
+    current_field = 0  # 0 = password, 1 = retype password
+    error_message = ""
+
+    while True:
+        stdscr.clear()
+        h, w = stdscr.getmaxyx()
+
+        # Header
+        stdscr.addstr(2, 2, "=== FIRST TIME SETUP ===", curses.A_BOLD | curses.color_pair(1))
+        stdscr.addstr(4, 2, "Create your Master Password")
+        stdscr.addstr(5, 2, "(Minimum 8 characters)")
+
+        # Password field
+        pwd_display = password if show_password else "*" * len(password)
+        if current_field == 0:
+            stdscr.attron(curses.A_REVERSE)
+        stdscr.addstr(8, 4, f"Password        : {pwd_display}")
+        if current_field == 0:
+            stdscr.attroff(curses.A_REVERSE)
+
+        # Retype password field
+        retype_display = retype_password if show_password else "*" * len(retype_password)
+        if current_field == 1:
+            stdscr.attron(curses.A_REVERSE)
+        stdscr.addstr(10, 4, f"Retype Password : {retype_display}")
+        if current_field == 1:
+            stdscr.attroff(curses.A_REVERSE)
+
+        # Show password checkbox
+        checkbox = "[x]" if show_password else "[ ]"
+        stdscr.addstr(12, 4, f"{checkbox} Show Password (TAB)")
+
+        # Instructions
+        stdscr.addstr(14, 4, "UP/DOWN: Switch Field | ENTER: Submit | ESC: Exit")
+
+        # Error message
+        if error_message:
+            stdscr.addstr(16, 4, error_message, curses.A_BOLD | curses.color_pair(3))
+
+        # Move cursor to current field
+        if current_field == 0:
+            stdscr.move(8, 22 + len(password))
+        else:
+            stdscr.move(10, 22 + len(retype_password))
+
+        stdscr.refresh()
+        key = stdscr.getch()
+
+        if key == 27:  # ESC
+            return None
+        elif key == 9:  # TAB - toggle show password
+            show_password = not show_password
+        elif key == curses.KEY_UP:
+            current_field = 0
+            error_message = ""
+        elif key == curses.KEY_DOWN:
+            current_field = 1
+            error_message = ""
+        elif key in (10, 13):  # ENTER - submit
+            if len(password) < 8:
+                error_message = "Password too short! (min 8 characters)"
+            elif password != retype_password:
+                error_message = "Passwords do not match!"
+            elif password == retype_password and len(password) >= 8:
+                return password
+        elif key in (curses.KEY_BACKSPACE, 127, 8):  # Backspace
+            if current_field == 0:
+                password = password[:-1]
+            else:
+                retype_password = retype_password[:-1]
+            error_message = ""
+        elif 32 <= key <= 126:  # Printable characters
+            if current_field == 0:
+                password += chr(key)
+            else:
+                retype_password += chr(key)
+            error_message = ""
+
+
 # ======================================================
 # LOGIN PAGE
 # ======================================================
@@ -192,37 +279,3 @@ def dashboard_page(stdscr):
         elif key == 27:
             return
             
-# ======================================================
-# MENU
-# ======================================================
-def menu_page(stdscr):
-    curses.curs_set(0)
-
-    menu = ["Dashboard", "Settings", "Exit"]
-    current = 0
-
-    while True:
-        stdscr.clear()
-        stdscr.addstr(1, 2, "PYVAULT MENU", curses.A_BOLD)
-
-        for i, m in enumerate(menu):
-            if i == current:
-                stdscr.attron(curses.A_REVERSE)
-            stdscr.addstr(4 + i, 4, m)
-            if i == current:
-                stdscr.attroff(curses.A_REVERSE)
-
-        stdscr.refresh()
-        key = stdscr.getch()
-
-        if key == curses.KEY_UP:
-            current = (current - 1) % len(menu)
-        elif key == curses.KEY_DOWN:
-            current = (current + 1) % len(menu)
-        elif key in (10, 13):
-            if menu[current] == "Dashboard":
-                dashboard_page(stdscr)
-            elif menu[current] == "Settings":
-                settings_page(stdscr)
-            elif menu[current] == "Exit":
-                return

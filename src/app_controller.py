@@ -1,7 +1,7 @@
 import curses
 from .db_manager import DatabaseManager
 from .crypto_utils import CryptoManager
-from .tui import login_page, create_label_page
+from .tui import login_page, create_label_page, first_setup_page
 from .utils import copy_to_clipboard
 
 class AppController:
@@ -21,7 +21,7 @@ class AppController:
         stdscr.refresh()
         stdscr.getch()
 
-        master_password = login_page(stdscr)
+        master_password = first_setup_page(stdscr)
 
         if not master_password:
             stdscr.clear()
@@ -228,8 +228,8 @@ class AppController:
 
             # Display items
             if not items:
-                stdscr.addstr(5, 4, "Belum ada data yang disimpan.")
-                stdscr.addstr(7, 4, "Tekan CTRL+N untuk menambahkan akun pertama anda")
+                stdscr.addstr(5, 4, "NO DATA FOUND")
+                stdscr.addstr(7, 4, "Press CTRL+N to add your first account")
             else:
                 y = 4
                 for i, item in enumerate(items):
