@@ -34,6 +34,7 @@ class DatabaseManager:
                 username TEXT NOT NULL,
                 enc_data BLOB NOT NULL,
                 nonce BLOB NOT NULL,
+                description TEXT DEFAULT '',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
@@ -53,12 +54,12 @@ class DatabaseManager:
         result = self.cursor.fetchone()
         return result
     
-    def add_item(self, site, username, enc_data, nonce):
-        self.cursor.execute("INSERT INTO vault_items (site_name, username, enc_data, nonce) VALUES (?, ?, ?, ?)", (site, username, enc_data, nonce))
+    def add_item(self, site, username, enc_data, nonce, description=''):
+        self.cursor.execute("INSERT INTO vault_items (site_name, username, enc_data, nonce, description) VALUES (?, ?, ?, ?, ?)", (site, username, enc_data, nonce, description))
         self.conn.commit()
 
     def get_all_items(self):
-        self.cursor.execute("SELECT id, site_name, username FROM vault_items ORDER BY created_at DESC")
+        self.cursor.execute("SELECT id, site_name, username, description FROM vault_items ORDER BY created_at DESC")
         return self.cursor.fetchall()
     
     def get_item_by_id(self, item_id):
@@ -69,8 +70,8 @@ class DatabaseManager:
         self.cursor.execute("DELETE FROM vault_items WHERE id = ?", (item_id,))
         self.conn.commit()
 
-    def update_item(self, item_id, site, username, enc_data, nonce):
-        self.cursor.execute('''UPDATE vault_items SET site_name = ?, username = ?, enc_data = ?, nonce = ? WHERE id = ?''', (site, username, enc_data, nonce, item_id))
+    def update_item(self, item_id, site, username, enc_data, nonce, description=''):
+        self.cursor.execute('''UPDATE vault_items SET site_name = ?, username = ?, enc_data = ?, nonce = ?, description = ? WHERE id = ?''', (site, username, enc_data, nonce, description, item_id))
         self.conn.commit()
 
     def close(self):

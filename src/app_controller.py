@@ -2,7 +2,18 @@ import curses
 from .db_manager import DatabaseManager
 from .crypto_utils import CryptoManager
 from .tui import login_page, create_label_page, first_setup_page
-from .utils import copy_to_clipboard
+from .utils import copy_to_clipboard, validate_password_strength
+from .logger import get_logger
+
+LOGO = [
+    "╔══════════════════════════════╗",
+    "║        P Y V A U L T         ║",
+    "║       Password Manager       ║",
+    "╚══════════════════════════════╝",
+]
+
+LOGO_SIMPLE = "═══ PYVAULT ═══"
+DIVIDER = "─" * 42
 
 class AppController:
     def __init__(self):
@@ -10,14 +21,16 @@ class AppController:
         self.crypto = CryptoManager()
         self.master_key = None
         self.salt = None
+        self.logger = get_logger()
     
     def setup_first_time(self, stdscr):
         stdscr.clear()
-        stdscr.addstr(2, 2, "=== FIRST TIME SETUP ===", curses.A_BOLD | curses.color_pair(1))
+        stdscr.addstr(2, 2, "═══ FIRST TIME SETUP ═══", curses.A_BOLD | curses.color_pair(1))
         stdscr.addstr(4, 2, "Create Master Password")
         stdscr.addstr(5, 2, "(Minimum 8 characters)")
         stdscr.addstr(7, 2, "This password will protect all your data.")
         stdscr.addstr(8, 2, "If you forget your password, your data will be lost!")
+        stdscr.addstr(9, 2, "Press any key to continue...")
         stdscr.refresh()
         stdscr.getch()
 
@@ -26,16 +39,23 @@ class AppController:
         if not master_password:
             stdscr.clear()
             stdscr.addstr(5, 2, "Setup cancelled!", curses.A_BOLD | curses.color_pair(3))
+            stdscr.addstr(7, 2, "Press any key to exit...")
             stdscr.refresh()
             stdscr.getch()
             return False
 
-        # Validated password length
-        if len(master_password) < 8:
+        # Validasi password strength
+        is_valid = validate_password_strength(master_password)
+        if not is_valid:
             stdscr.clear()
-            stdscr.addstr(5, 2, "Password too short!", curses.A_BOLD | curses.color_pair(3))
-            stdscr.addstr(7, 2, "Minimum 8 characters.", curses.A_BOLD)
-            stdscr.addstr(9, 2, "Press any key to try again...", curses.A_BOLD)
+            stdscr.addstr(5, 2, "Password does not meet requirements!", curses.A_BOLD | curses.color_pair(3))
+            stdscr.addstr(7, 2, "Password must contain:")
+            stdscr.addstr(8, 4, "- Minimal 8 characters")
+            stdscr.addstr(9, 4, "- Uppercase letter (A-Z)")
+            stdscr.addstr(10, 4, "- Lowercase letter (a-z)")
+            stdscr.addstr(11, 4, "- Number (0-9)")
+            stdscr.addstr(12, 4, "- Symbol (!@#$%...)")
+            stdscr.addstr(14, 2, "Press any key to try again...", curses.A_BOLD)
             stdscr.refresh()
             stdscr.getch()
             return self.setup_first_time(stdscr)
@@ -57,10 +77,10 @@ class AppController:
         stdscr.addstr(7, 2, "Press any key to continue...", curses.A_BOLD)
         stdscr.refresh()
         stdscr.getch()
+        self.logger.log_first_setup(True)
         return True
 
     def verify_master_password(self, stdscr):
-        # Load config dari database
         config = self.db.get_config()
         if not config:
             stdscr.clear()
@@ -74,15 +94,11 @@ class AppController:
         self.salt = combined_salt[:16]
         verifier_salt = combined_salt[16:32]
 
-        # Login page
         master_password = login_page(stdscr)
-        if not master_password:
-            return False
+        if not master_password:return False
 
-        # Derive master key dari password
         self.master_key = self.crypto.derive_key(master_password, self.salt)
 
-        # Verifikasi password dengan stored verifier
         computed_verifier = self.crypto.hash_verifier(self.master_key, verifier_salt)
 
         if computed_verifier != stored_verifier:
@@ -91,13 +107,15 @@ class AppController:
             stdscr.addstr(7, 2, "Press any key to exit...")
             stdscr.refresh()
             stdscr.getch()
+            self.logger.log_login(False)
             return False
+        self.logger.log_login(True)
         return True
 
     def load_vault_items(self):
         items = []
         db_items = self.db.get_all_items()
-        for item_id, site_name, username, in db_items:
+        for item_id, site_name, username, description in db_items:
             result = self.db.get_item_by_id(item_id)
             if result:
                 enc_data, nonce = result
@@ -107,7 +125,8 @@ class AppController:
                         "id": item_id,
                         "site_name": site_name,
                         "username": username,
-                        "password": password
+                        "password": password,
+                        "description": description or ""
                     })
                 except Exception as e:
                     print(f"Error decrypting data: {e}")
@@ -119,8 +138,10 @@ class AppController:
             item_data['site'],
             item_data['username'],
             enc_data,
-            nonce
+            nonce,
+            item_data.get('description', '')
         )
+        self.logger.log_add_item(item_data['site'])
 
     def delete_item(self, item_id):
         self.db.delete_item(item_id)
@@ -132,7 +153,8 @@ class AppController:
             item_data['site'],
             item_data['username'],
             enc_data,
-            nonce
+            nonce,
+            item_data.get('description', '')
         )
 
     def view_item_detail(self, stdscr, item):
@@ -151,9 +173,12 @@ class AppController:
             
             pwd = item['password'] if show_password else '*' * len(item['password'])
             stdscr.addstr(8, 4, f"Password : {pwd}")
+
+            desc = item['description'] if show_password else '*' * len(item['description'])
+            stdscr.addstr(10, 4, f"Description : {desc}")
             
             checkbox = "[x]" if show_password else "[ ]"
-            stdscr.addstr(10, 4, f"{checkbox} Show Password (TAB)")
+            stdscr.addstr(12, 4, f"{checkbox} Show Password (TAB)")
             
             stdscr.addstr(h - 2, 2, "TAB Toggle Password | ESC Back")
             stdscr.refresh()
@@ -173,20 +198,24 @@ class AppController:
         while True:
             stdscr.clear()
             h, w = stdscr.getmaxyx()
+            y = 1
+            for line in LOGO:
+                if w > len(line) + 2:
+                    stdscr.addstr(y, 2, line, curses.color_pair(1))
+                y += 1
+            
+            stdscr.addstr(y, 2, "══════════ MAIN MENU ══════════", curses.A_BOLD)
+            y += 2
 
-            # Header
-            stdscr.addstr(1, 2, "PYVAULT - MAIN MENU", curses.A_BOLD | curses.color_pair(1))
-            stdscr.addstr(2, 2, "-" * 25)
-
-            # Menu items
+            # menu items
             for i, item in enumerate(menu):
-                y = 4 + i * 2
+                menu_y = y + i
                 if i == current:
                     stdscr.attron(curses.A_REVERSE)
-                    stdscr.addstr(y, 4, f"> {item}")
+                    stdscr.addstr(menu_y, 4, f" ▶ {item} ")
                     stdscr.attroff(curses.A_REVERSE)
                 else:
-                    stdscr.addstr(y, 4, f"  {item}")
+                    stdscr.addstr(menu_y, 4, f"   {item}")
 
             # Footer
             footer = "UP/DOWN:Navigate ENTER:Select"
@@ -222,9 +251,9 @@ class AppController:
             stdscr.clear()
             h, w = stdscr.getmaxyx()
 
-            # Header
-            stdscr.addstr(1, 2, "PYVAULT DASHBOARD", curses.A_BOLD | curses.color_pair(1))
-            stdscr.addstr(2, 2, "-" * 40)
+            stdscr.addstr(1, 2, "╔" + "═" * 40 + "╗", curses.color_pair(1))
+            stdscr.addstr(2, 2, "║" + "PYVAULT DASHBOARD".center(40) + "║", curses.A_BOLD | curses.color_pair(1))
+            stdscr.addstr(3, 2, "╚" + "═" * 40 + "╝", curses.color_pair(1))
 
             # Display items
             if not items:
@@ -246,7 +275,7 @@ class AppController:
 
                     y += 5
             
-            footer = "RET:View E:Edit C:Copy D:Del ^N:Add ESC:Exit"
+            footer = "ENTER:View E:Edit C:Copy D:Del ^N:Add ESC:Exit"
             if w > len(footer) + 4:
                 stdscr.addstr(h - 3, 2, footer)
 
@@ -267,6 +296,7 @@ class AppController:
             
             # View detail (ENTER)
             elif key in (10, 13) and items:
+                self.logger.log_view_item(items[current]['site_name'])
                 self.view_item_detail(stdscr, items[current])
             
             # Edit item
@@ -282,6 +312,7 @@ class AppController:
                     self.update_item(items[current]['id'], edited_item)
                     items = self.load_vault_items()
                     message = "Item updated!"
+                    self.logger.log_edit_item(edited_item['site'])
             
             # Add new item
             elif key == 14:     # CTRL+N
@@ -296,6 +327,7 @@ class AppController:
             elif key in (ord('c'), ord('C')) and items:
                 if copy_to_clipboard(items[current]['password']):
                     message = "Password copied! (auto-clear in 15s)"
+                    self.logger.log_copy_password(items[current]['site_name'])
                 else:
                     message = "Copy failed (pyperclip not installed)"
 
@@ -306,9 +338,11 @@ class AppController:
                 confirm = stdscr.getch()
 
                 if confirm in (ord('y'), ord('Y')):
+                    site_name = items[current]['site_name']
                     self.delete_item(items[current]['id'])
                     items = self.load_vault_items()
                     message = "Item deleted!"
+                    self.logger.log_delete_item(site_name)
                 
                 if current >= len(items) and items:
                     current = len(items) - 1
@@ -316,10 +350,10 @@ class AppController:
                     current = 0
 
             # Exit
-            elif key == 27:
-                return
+            elif key == 27:return
 
     def close(self):
+        self.logger.log_app_exit()
         self.db.close()
         self.master_key = None 
         self.salt = None

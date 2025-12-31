@@ -1,5 +1,12 @@
 import curses
 
+LOGO = [
+    "╔══════════════════════════════╗",
+    "║        P Y V A U L T         ║",
+    "║       Password Manager       ║",
+    "╚══════════════════════════════╝",
+]
+
 # ======================================================
 # FIRST TIME SETUP PAGE
 # ======================================================
@@ -16,32 +23,44 @@ def first_setup_page(stdscr):
         stdscr.clear()
         h, w = stdscr.getmaxyx()
 
-        stdscr.addstr(2, 2, "=== FIRST TIME SETUP ===", curses.A_BOLD | curses.color_pair(1))
-        stdscr.addstr(4, 2, "Create your Master Password")
-        stdscr.addstr(5, 2, "(Minimum 8 characters)")
+        y = 1
+        for line in LOGO:
+            if w > len(line) + 2:
+                stdscr.addstr(y, 2, line, curses.color_pair(1))
+            y += 1
+        
+        y += 1
+        stdscr.addstr(y, 2, "══════ FIRST TIME SETUP ═══════", curses.A_BOLD)
+        y += 2
+        stdscr.addstr(y, 2, "Create your Master Password")
+        y += 1
+        stdscr.addstr(y, 2, "(Minimum 8 characters)")
+        y += 2
 
         pwd_display = password if show_password else "*" * len(password)
-        highlight1 = ">" if current_field == 0 else " "
-        stdscr.addstr(8, 2, highlight1, curses.A_BOLD | curses.color_pair(2))
-        stdscr.addstr(8, 4, f"Password        : {pwd_display}")
+        highlight1 = "▶" if current_field == 0 else " "
+        pwd_y = y
+        stdscr.addstr(pwd_y, 2, highlight1, curses.A_BOLD | curses.color_pair(2))
+        stdscr.addstr(pwd_y, 4, f"Password        : {pwd_display}")
 
         retype_display = retype_password if show_password else "*" * len(retype_password)
-        highlight2 = ">" if current_field == 1 else " "
-        stdscr.addstr(10, 2, highlight2, curses.A_BOLD | curses.color_pair(2))
-        stdscr.addstr(10, 4, f"Retype Password : {retype_display}")
+        highlight2 = "▶" if current_field == 1 else " "
+        retype_y = pwd_y + 2
+        stdscr.addstr(retype_y, 2, highlight2, curses.A_BOLD | curses.color_pair(2))
+        stdscr.addstr(retype_y, 4, f"Retype Password : {retype_display}")
 
         checkbox = "[x]" if show_password else "[ ]"
-        stdscr.addstr(12, 4, f"{checkbox} Show Password (TAB)")
+        stdscr.addstr(retype_y + 2, 4, f"{checkbox} Show Password (TAB)")
 
-        stdscr.addstr(14, 4, "UP/DOWN: Switch Field | ENTER: Submit | ESC: Exit")
+        stdscr.addstr(retype_y + 4, 4, "UP/DOWN: Switch | ENTER: Submit | ESC: Exit")
 
         if error_message:
-            stdscr.addstr(16, 4, error_message, curses.A_BOLD | curses.color_pair(3))
+            stdscr.addstr(retype_y + 6, 4, error_message, curses.A_BOLD | curses.color_pair(3))
 
         if current_field == 0:
-            stdscr.move(8, 22 + len(password))
+            stdscr.move(pwd_y, 22 + len(password))
         else:
-            stdscr.move(10, 22 + len(retype_password))
+            stdscr.move(retype_y, 22 + len(retype_password))
 
         stdscr.refresh()
         key = stdscr.getch()
@@ -89,16 +108,18 @@ def login_page(stdscr):
         stdscr.clear()
         h, w = stdscr.getmaxyx()
 
-        stdscr.addstr(2, 2, "PYVAULT LOGIN", curses.A_BOLD | curses.color_pair(1))
+        stdscr.addstr(2, 2, "╔" + "═" * 30 + "╗", curses.color_pair(1))
+        stdscr.addstr(3, 2, "║" + "PYVAULT LOGIN".center(30) + "║", curses.A_BOLD | curses.color_pair(1))
+        stdscr.addstr(4, 2, "╚" + "═" * 30 + "╝", curses.color_pair(1))
 
         pwd = password if show_password else "*" * len(password)
-        stdscr.addstr(5, 4, f"Password : {pwd}")
+        stdscr.addstr(6, 4, f"Password : {pwd}")
 
-        checkbox = "[x]" if show_password else "[ ]"
-        stdscr.addstr(7, 4, f"{checkbox} Show Password (TAB)")
-        stdscr.addstr(9, 4, "ENTER Login | ESC Exit")
+        checkbox = "[✓]" if show_password else "[ ]"
+        stdscr.addstr(8, 4, f"{checkbox} Show Password (TAB)")
+        stdscr.addstr(10, 4, "ENTER: Login │ ESC: Exit")
 
-        stdscr.move(5, 15 + len(password))
+        stdscr.move(6, 15 + len(password))
         stdscr.refresh()
 
         key = stdscr.getch()
@@ -201,70 +222,3 @@ def create_label_page(stdscr, preset_data=None):
             elif field == "username": username += chr(key)
             elif field == "password": password += chr(key)
             elif field == "description": description += chr(key)
-
-
-# ======================================================
-# DASHBOARD
-# ======================================================
-def dashboard_page(stdscr):
-    curses.curs_set(0)
-
-    items = [{
-        "label": "akun steam",
-        "site": "www.steam.com",
-        "username": "GodOfHyperdeath",
-        "password": "chara1234",
-        "description": "Akun utama"
-    }]
-
-    current = 0
-    message = ""
-
-    while True:
-        stdscr.clear()
-        h, w = stdscr.getmaxyx()
-
-        stdscr.addstr(1, 2, "DASHBOARD", curses.A_BOLD)
-        stdscr.addstr(2, 2, "-" * 40)
-
-        y = 4
-        for i, item in enumerate(items):
-            if i == current:
-                stdscr.attron(curses.A_REVERSE)
-
-            stdscr.addstr(y, 4, f"Label    : {item['label']}")
-            stdscr.addstr(y + 1, 4, f"Site     : {item['site']}")
-            stdscr.addstr(y + 2, 4, f"Username : {item['username']}")
-            stdscr.addstr(y + 3, 4, f"Password : {'*' * len(item['password'])}")
-
-            if i == current:
-                stdscr.attroff(curses.A_REVERSE)
-
-            y += 6
-
-        stdscr.addstr(h - 3, 2, "CTRL+N New | E Edit | O Copy | ESC Back")
-        if message:
-            stdscr.addstr(h - 2, 2, message)
-
-        stdscr.refresh()
-        key = stdscr.getch()
-        message = ""
-
-        if key == curses.KEY_UP:
-            current = (current - 1) % len(items)
-        elif key == curses.KEY_DOWN:
-            current = (current + 1) % len(items)
-        elif key == 14:
-            new = create_label_page(stdscr)
-            if new:
-                items.append(new)
-                current = len(items) - 1
-        elif key in (ord("e"), ord("E")):
-            edited = create_label_page(stdscr, items[current])
-            if edited:
-                items[current] = edited
-        elif key in (ord("o"), ord("O")):
-            message = f"Password copied: {items[current]['password']}"
-        elif key == 27:
-            return
-            

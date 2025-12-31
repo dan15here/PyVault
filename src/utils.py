@@ -1,5 +1,4 @@
 import time
-import pyperclip
 import threading
 
 
@@ -40,13 +39,16 @@ def copy_to_clipboard(text, auto_clear=True, clear_delay=15):
         return False
     
 def validate_password_strength(password):
+    symbols = "!@#$%^&*()_+-=[]{}|;:,.<>?"
     if len(password) < 8:
-        return False, "Password must be at least 8 characters"
+        return False
     if not any(c.isupper() for c in password):
-        return False, "Password must contain uppercase letter"
+        return False
     if not any(c.islower() for c in password):
-        return False, "Password must contain lowercase letetr"
+        return False
     if not any(c.isdigit() for c in password):
-        return False, "Password must contain number"
-    return True, "Strong password"
+        return False
+    if not any(c in symbols for c in password):
+        return False
+    return True
 

@@ -1,5 +1,6 @@
 import curses
 from src.app_controller import AppController
+from src.logger import get_logger
 
 def init_colors():
     curses.start_color()
@@ -11,6 +12,8 @@ def init_colors():
 
 def main(stdscr):
     init_colors()
+    logger = get_logger()
+    logger.log_app_start()
     app = AppController()
 
     try:
