@@ -160,9 +160,9 @@ class AppController:
             
             key = stdscr.getch()
             
-            if key == 27:  # ESC
+            if key == 27: 
                 return
-            elif key == 9:  # TAB
+            elif key == 9:  
                 show_password = not show_password
 
     def run_main_menu(self, stdscr):
@@ -209,7 +209,7 @@ class AppController:
                         self.save_new_item(new_item)
                 elif menu[current] == "Exit":
                     return
-            elif key == 27:  # ESC
+            elif key == 27: 
                 return
 
     def run_dashboard(self, stdscr):

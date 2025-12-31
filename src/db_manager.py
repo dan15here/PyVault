@@ -5,10 +5,10 @@ import subprocess
 class DatabaseManager:
     def __init__(self, db_name='pyvault.db'):
         self.db_name = db_name
-        self.conn = sqlite3.connect(self.db_name)  # 1. Koneksi ke SQLite
+        self.conn = sqlite3.connect(self.db_name)  
         self.cursor = self.conn.cursor()
-        self._create_tables()                      # 2. Pastikan tabel tersedia
-        self._harden_permission()                  # 3. Kunci file database (Security)
+        self._create_tables()                     
+        self._harden_permission()                 
     
     def _harden_permission(self):
         # chmod 600

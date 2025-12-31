@@ -50,16 +50,3 @@ def validate_password_strength(password):
         return False, "Password must contain number"
     return True, "Strong password"
 
-def generate_password(length=16):
-    import secrets
-    import string
-
-    chars = string.ascii_letters + string.digits + "!@#$%^&*()-_=+[]{}|;:,.<>?"
-
-    while True:
-        password = ' '.join(secrets.choice(chars) for _ in range(length))
-
-        if (any(c.isupper() for c in password) and
-            any(c.islower() for c in password) and
-            any(c.isdigit() for c in password)):
-            return password
