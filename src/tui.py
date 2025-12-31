@@ -3,7 +3,6 @@ import curses
 # ======================================================
 # FIRST TIME SETUP PAGE
 # ======================================================
-
 def first_setup_page(stdscr):
     curses.curs_set(1)
     stdscr.keypad(True)
@@ -22,18 +21,14 @@ def first_setup_page(stdscr):
         stdscr.addstr(5, 2, "(Minimum 8 characters)")
 
         pwd_display = password if show_password else "*" * len(password)
-        if current_field == 0:
-            stdscr.attron(curses.A_REVERSE)
+        highlight1 = ">" if current_field == 0 else " "
+        stdscr.addstr(8, 2, highlight1, curses.A_BOLD | curses.color_pair(2))
         stdscr.addstr(8, 4, f"Password        : {pwd_display}")
-        if current_field == 0:
-            stdscr.attroff(curses.A_REVERSE)
 
         retype_display = retype_password if show_password else "*" * len(retype_password)
-        if current_field == 1:
-            stdscr.attron(curses.A_REVERSE)
+        highlight2 = ">" if current_field == 1 else " "
+        stdscr.addstr(10, 2, highlight2, curses.A_BOLD | curses.color_pair(2))
         stdscr.addstr(10, 4, f"Retype Password : {retype_display}")
-        if current_field == 1:
-            stdscr.attroff(curses.A_REVERSE)
 
         checkbox = "[x]" if show_password else "[ ]"
         stdscr.addstr(12, 4, f"{checkbox} Show Password (TAB)")
