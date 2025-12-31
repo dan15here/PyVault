@@ -1,26 +1,26 @@
 import curses
 
+# ======================================================
+# FIRST TIME SETUP PAGE
+# ======================================================
 
-# First setup page
 def first_setup_page(stdscr):
     curses.curs_set(1)
     stdscr.keypad(True)
     password = ""
     retype_password = ""
     show_password = False
-    current_field = 0  # 0 = password, 1 = retype password
+    current_field = 0 
     error_message = ""
 
     while True:
         stdscr.clear()
         h, w = stdscr.getmaxyx()
 
-        # Header
         stdscr.addstr(2, 2, "=== FIRST TIME SETUP ===", curses.A_BOLD | curses.color_pair(1))
         stdscr.addstr(4, 2, "Create your Master Password")
         stdscr.addstr(5, 2, "(Minimum 8 characters)")
 
-        # Password field
         pwd_display = password if show_password else "*" * len(password)
         if current_field == 0:
             stdscr.attron(curses.A_REVERSE)
@@ -28,7 +28,6 @@ def first_setup_page(stdscr):
         if current_field == 0:
             stdscr.attroff(curses.A_REVERSE)
 
-        # Retype password field
         retype_display = retype_password if show_password else "*" * len(retype_password)
         if current_field == 1:
             stdscr.attron(curses.A_REVERSE)
@@ -36,18 +35,14 @@ def first_setup_page(stdscr):
         if current_field == 1:
             stdscr.attroff(curses.A_REVERSE)
 
-        # Show password checkbox
         checkbox = "[x]" if show_password else "[ ]"
         stdscr.addstr(12, 4, f"{checkbox} Show Password (TAB)")
 
-        # Instructions
         stdscr.addstr(14, 4, "UP/DOWN: Switch Field | ENTER: Submit | ESC: Exit")
 
-        # Error message
         if error_message:
             stdscr.addstr(16, 4, error_message, curses.A_BOLD | curses.color_pair(3))
 
-        # Move cursor to current field
         if current_field == 0:
             stdscr.move(8, 22 + len(password))
         else:
@@ -56,9 +51,9 @@ def first_setup_page(stdscr):
         stdscr.refresh()
         key = stdscr.getch()
 
-        if key == 27:  # ESC
+        if key == 27:  
             return None
-        elif key == 9:  # TAB - toggle show password
+        elif key == 9:
             show_password = not show_password
         elif key == curses.KEY_UP:
             current_field = 0
@@ -66,26 +61,25 @@ def first_setup_page(stdscr):
         elif key == curses.KEY_DOWN:
             current_field = 1
             error_message = ""
-        elif key in (10, 13):  # ENTER - submit
+        elif key in (10, 13):
             if len(password) < 8:
                 error_message = "Password too short! (min 8 characters)"
             elif password != retype_password:
                 error_message = "Passwords do not match!"
             elif password == retype_password and len(password) >= 8:
                 return password
-        elif key in (curses.KEY_BACKSPACE, 127, 8):  # Backspace
+        elif key in (curses.KEY_BACKSPACE, 127, 8):
             if current_field == 0:
                 password = password[:-1]
             else:
                 retype_password = retype_password[:-1]
             error_message = ""
-        elif 32 <= key <= 126:  # Printable characters
+        elif 32 <= key <= 126:
             if current_field == 0:
                 password += chr(key)
             else:
                 retype_password += chr(key)
             error_message = ""
-
 
 # ======================================================
 # LOGIN PAGE
