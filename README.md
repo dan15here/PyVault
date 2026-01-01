@@ -112,7 +112,7 @@ tugas_pbl_kel2/
 | No | Nama | NIM |
 |----|------|-----|
 | 1 | Muhammad Danish | 4332511020 |
-| 2 | Arya Deva Bahari | 4332511021 |
+| 2 | Arya Deva Bahri | 4332511021 |
 | 3 | M Maulana Alpidie Deputra | 4332511017 |
 
 ---

@@ -12,7 +12,6 @@ LOGO = [
     "╚══════════════════════════════╝",
 ]
 
-LOGO_SIMPLE = "═══ PYVAULT ═══"
 DIVIDER = "─" * 42
 
 class AppController:
