@@ -107,7 +107,7 @@ tugas_pbl_kel2/
 
 ---
 
-## 👥 Anggota Kelompok 2
+## 👥 Anggota Kelompok 7
 
 | No | Nama | NIM |
 |----|------|-----|
