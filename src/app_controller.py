@@ -2,7 +2,7 @@ import curses
 from .db_manager import DatabaseManager
 from .crypto_utils import CryptoManager
 from .tui import login_page, create_label_page, first_setup_page
-from .utils import copy_to_clipboard, validate_password_strength
+from .utils import copy_to_clipboard, validate_password_strength, generate_password
 from .logger import get_logger
 
 LOGO = [
@@ -189,9 +189,90 @@ class AppController:
             elif key == 9:  
                 show_password = not show_password
 
+    def run_generate_password(self, stdscr):
+        curses.curs_set(0)
+        length = 16
+        use_uppercase = True
+        use_lowercase = True
+        use_digits = True
+        use_symbols = True
+        current_option = 0
+        password = generate_password(length, use_uppercase, use_lowercase, use_digits, use_symbols)
+        message = ""
+
+        options = ["Length", "Uppercase (A-Z)", "Lowercase (a-z)", "Digits (0-9)", "Symbols (!@#...)"]
+
+        while True:
+            stdscr.clear()
+            h, w = stdscr.getmaxyx()
+
+            stdscr.addstr(1, 2, "╔" + "═" * 40 + "╗", curses.color_pair(1))
+            stdscr.addstr(2, 2, "║" + "GENERATE PASSWORD".center(40) + "║", curses.A_BOLD | curses.color_pair(1))
+            stdscr.addstr(3, 2, "╚" + "═" * 40 + "╝", curses.color_pair(1))
+            stdscr.addstr(5, 4, "Generated Password:", curses.A_BOLD)
+            stdscr.addstr(6, 4, password, curses.color_pair(2))
+
+            stdscr.addstr(8, 4, "Options:", curses.A_BOLD)
+            values = [str(length), use_uppercase, use_lowercase, use_digits, use_symbols]
+
+            for i, opt in enumerate(options):
+                y = 9 + i
+                if i == current_option:
+                    stdscr.attron(curses.A_REVERSE)
+                
+                if i == 0:
+                    stdscr.addstr(y, 6, f"{opt}: {values[i]}")
+                else:
+                    checkbox = "[x]" if values[i] else "[ ]"
+                    stdscr.addstr(y, 6, f"{checkbox} {opt}")
+                
+                if i == current_option:
+                    stdscr.attroff(curses.A_REVERSE)
+
+            stdscr.addstr(h - 4, 2, "UP/DOWN:Navigate  ENTER:Toggle  R:Regenerate")
+            stdscr.addstr(h - 3, 2, "LEFT/RIGHT:Change Length  C:Copy  ESC:Back")
+
+            if message:
+                stdscr.addstr(h - 2, 2, message, curses.A_BOLD | curses.color_pair(2))
+
+            stdscr.refresh()
+            key = stdscr.getch()
+            message = ""
+
+            if key == curses.KEY_UP:
+                current_option = (current_option - 1) % len(options)
+            elif key == curses.KEY_DOWN:
+                current_option = (current_option + 1) % len(options)
+            elif key == curses.KEY_LEFT and current_option == 0:
+                length = max(8, length - 1)
+                password = generate_password(length, use_uppercase, use_lowercase, use_digits, use_symbols)
+            elif key == curses.KEY_RIGHT and current_option == 0:
+                length = min(64, length + 1)
+                password = generate_password(length, use_uppercase, use_lowercase, use_digits, use_symbols)
+            elif key in (10, 13): 
+                if current_option == 1:
+                    use_uppercase = not use_uppercase
+                elif current_option == 2:
+                    use_lowercase = not use_lowercase
+                elif current_option == 3:
+                    use_digits = not use_digits
+                elif current_option == 4:
+                    use_symbols = not use_symbols
+                password = generate_password(length, use_uppercase, use_lowercase, use_digits, use_symbols)
+            elif key in (ord('r'), ord('R')): 
+                password = generate_password(length, use_uppercase, use_lowercase, use_digits, use_symbols)
+                message = "Password regenerated!"
+            elif key in (ord('c'), ord('C')): 
+                if copy_to_clipboard(password):
+                    message = "Password copied! (auto-clear in 15s)"
+                else:
+                    message = "Copy failed (pyperclip not installed)"
+            elif key == 27: 
+                return
+
     def run_main_menu(self, stdscr):
         curses.curs_set(0)
-        menu = ["View Dashboard", "Add New Account", "Exit"]
+        menu = ["View Dashboard", "Add New Account", "Generate Password", "Exit"]
         current = 0
 
         while True:
@@ -235,6 +316,8 @@ class AppController:
                     new_item = create_label_page(stdscr)
                     if new_item:
                         self.save_new_item(new_item)
+                elif menu[current] == "Generate Password":
+                    self.run_generate_password(stdscr)
                 elif menu[current] == "Exit":
                     return
             elif key == 27: 
