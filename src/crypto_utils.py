@@ -34,17 +34,24 @@ class CryptoManager:
             hash_len=32,
             type=Type.ID
         )
-
+    
     def encrypt_data(self, key, plaintext):
+        # 1. Initialize AES-GCM
         aesgcm = AESGCM(key)
-        nonce = os.urandom(12) # GCM standard 12-byte nonce
-        ciphertext = aesgcm.encrypt(nonce, plaintext.encode(), None)
-        return ciphertext, nonce
+        # 2. Generate unique 12-byte Nonce (Number used Once)
+        nonce = os.urandom(12)
+         # 3. Encrypt data                                           
+        ciphertext = aesgcm.encrypt(nonce, plaintext.encode(), None) 
+         # 4. Return combined bytes  
+        return ciphertext, nonce                                       
 
     def decrypt_data(self, key, ciphertext, nonce):
         try:
+             # 1. Initialize AES-GCM
             aesgcm = AESGCM(key)
-            plaintext = aesgcm.decrypt(nonce, ciphertext, None)
-            return plaintext.decode()
+             # 2. Decrypt ciphertext using nonce
+            plaintext = aesgcm.decrypt(nonce, ciphertext, None)    
+             # 3. Converts raw bytes into a readable string    
+            return plaintext.decode()                                 
         except Exception as e:
-            raise ValueError("Dekripsi gagal: kunci salah atau data corrupt") from e
+            raise ValueError("Decryption failed: wrong key or corrupt data") from e
