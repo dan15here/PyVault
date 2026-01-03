@@ -28,7 +28,7 @@ Aplikasi **Password Manager** berbasis terminal (CLI) yang aman untuk menyimpan 
 
 ### 1. Clone Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/godofhyperdeath19-bot/tugas_pbl_kel2.git
 cd tugas_pbl_kel2
 ```
 
