@@ -28,8 +28,8 @@ Aplikasi **Password Manager** berbasis terminal (CLI) yang aman untuk menyimpan 
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/godofhyperdeath19-bot/tugas_pbl_kel2.git
-cd tugas_pbl_kel2
+git clone https://github.com/godofhyperdeath19-bot/PyVault_Kelompok7.git
+cd PyVault_Kelompok7
 ```
 
 ### 2. Buat Virtual Environment (Opsional tapi Disarankan)
