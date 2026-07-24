@@ -120,7 +120,8 @@ tugas_pbl_kel2/
 ## 📚 Mata Kuliah
 
 - **Mata Kuliah**: Algoritma dan Pemrograman
-- **Program Studi**: Teknik Informatika
+- **Jurusan**: Teknik Informatika
+- **Program Studi**: Rekayasa Keamanan Siber
 - **Institusi**: Politeknik Negeri Batam
 - **Semester**: 1 (Ganjil)
 - **Tahun Ajaran**: 2025/2026
