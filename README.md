@@ -29,7 +29,7 @@ A secure terminal-based (CLI) **Password Manager** application for storing and m
 ### 1. Clone the Repository
 
 ```bash
-git clone (https://github.com/dan15here/PyVault.git)
+git clone https://github.com/dan15here/PyVault.git
 cd PyVault
 ```
 
